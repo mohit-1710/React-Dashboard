@@ -8,22 +8,20 @@ interface AdminRouteProps {
 }
 
 export function AdminRoute({ children }: AdminRouteProps) {
-  const { user } = useAuth();
-  const { isAdmin, loading } = useAdmin();
+  const { user, loading: authLoading } = useAuth();
+  const { isAdmin, loading: adminLoading } = useAdmin();
   const location = useLocation();
 
-  console.log('AdminRoute - Current user:', user?.uid);
-  console.log('AdminRoute - isAdmin:', isAdmin);
-  console.log('AdminRoute - loading:', loading);
-  console.log('AdminRoute - current location:', location.pathname);
+  console.log('AdminRoute - Auth State:', {
+    user: user?.uid,
+    authLoading,
+    isAdmin,
+    adminLoading,
+    path: location.pathname
+  });
 
-  if (!user) {
-    console.log('AdminRoute - No user, redirecting to /auth');
-    return <Navigate to="/auth" state={{ from: location }} replace />;
-  }
-
-  if (loading) {
-    console.log('AdminRoute - Loading admin status...');
+  // Show loading state while either auth or admin status is being checked
+  if (authLoading || adminLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -31,11 +29,15 @@ export function AdminRoute({ children }: AdminRouteProps) {
     );
   }
 
+  // If no user, redirect to auth page
+  if (!user) {
+    return <Navigate to="/auth" state={{ from: location.pathname }} replace />;
+  }
+
+  // If user is not admin, redirect to home
   if (!isAdmin) {
-    console.log('AdminRoute - User is not admin, redirecting to home');
     return <Navigate to="/" replace />;
   }
 
-  console.log('AdminRoute - Rendering admin content');
   return <>{children}</>;
 }
