@@ -1,16 +1,6 @@
 {
   "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
-  ],
-  "routes": [
-    { "handle": "filesystem" },
-    { "src": "/admin/(.*)", "dest": "/index.html" },
-    { "src": "/projects/(.*)", "dest": "/index.html" },
-    { "src": "/auth", "dest": "/index.html" },
-    { "src": "/(.*)", "dest": "/index.html" }
+    { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
     {
@@ -19,8 +9,22 @@
         {
           "key": "Cache-Control",
           "value": "no-store, must-revalidate"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
         }
       ]
     }
-  ]
+  ],
+  "cleanUrls": true,
+  "trailingSlash": false
 }
