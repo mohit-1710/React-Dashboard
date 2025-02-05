@@ -11,14 +11,20 @@ export function useAdmin() {
   useEffect(() => {
     const checkAdminStatus = async () => {
       if (!user) {
+        console.log('No user found, setting isAdmin to false');
         setIsAdmin(false);
         setLoading(false);
         return;
       }
 
       try {
+        console.log('Checking admin status for user:', user.uid);
         const userDoc = await getDoc(doc(db, 'users', user.uid));
-        setIsAdmin(userDoc.data()?.isAdmin === true);
+        const userData = userDoc.data();
+        console.log('User data:', userData);
+        const adminStatus = userData?.isAdmin === true;
+        console.log('Admin status:', adminStatus);
+        setIsAdmin(adminStatus);
       } catch (error) {
         console.error('Error checking admin status:', error);
         setIsAdmin(false);
