@@ -9,7 +9,7 @@ import {
   signInWithPopup,
 } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
-import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 
 interface AuthContextType {
   user: User | null;
@@ -37,7 +37,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      console.log('[AuthContext] Auth state changed:', { 
+        uid: user?.uid,
+        email: user?.email 
+      });
       setUser(user);
       setLoading(false);
     });
@@ -45,36 +49,46 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return unsubscribe;
   }, []);
 
-  const signUp = async (email: string, password: string, isAdmin: boolean) => {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    await initializeUserProgress(userCredential.user.uid, email, isAdmin);
-  };
+  const initializeUserData = async (uid: string, email: string, isAdmin: boolean = false) => {
+    console.log('[AuthContext] Initializing user data:', { uid, email, isAdmin });
+    const userRef = doc(db, 'users', uid);
+    const userDoc = await getDoc(userRef);
 
-  const signIn = async (email: string, password: string) => {
-    await signInWithEmailAndPassword(auth, email, password);
-  };
-
-  const signInWithGoogle = async () => {
-    const provider = new GoogleAuthProvider();
-    const userCredential = await signInWithPopup(auth, provider);
-    const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
-    
     if (!userDoc.exists()) {
-      await initializeUserProgress(userCredential.user.uid, userCredential.user.email || '', false);
+      console.log('[AuthContext] Creating new user document');
+      await setDoc(userRef, {
+        email,
+        isAdmin,
+        progress: {},
+        createdAt: serverTimestamp(),
+        lastLogin: serverTimestamp(),
+      });
+    } else {
+      console.log('[AuthContext] Updating user last login');
+      await updateDoc(userRef, {
+        lastLogin: serverTimestamp(),
+      });
     }
   };
 
-  const initializeUserProgress = async (uid: string, email: string, isAdmin: boolean = false) => {
-    const userRef = doc(db, 'users', uid);
-    await setDoc(userRef, {
-      email,
-      isAdmin,
-      progress: {},
-      createdAt: new Date().toISOString(),
-    });
+  const signUp = async (email: string, password: string, isAdmin: boolean) => {
+    console.log('[AuthContext] Signing up new user:', { email, isAdmin });
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    await initializeUserData(userCredential.user.uid, email, isAdmin);
   };
 
-  const logout = () => signOut(auth);
+  const signIn = async (email: string, password: string) => {
+    console.log('[AuthContext] Signing in user:', { email });
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    await initializeUserData(userCredential.user.uid, email);
+  };
+
+  const signInWithGoogle = async () => {
+    console.log('[AuthContext] Initiating Google sign in');
+    const provider = new GoogleAuthProvider();
+    const userCredential = await signInWithPopup(auth, provider);
+    await initializeUserData(userCredential.user.uid, userCredential.user.email || '');
+  };
 
   const getUserProgress = async () => {
     if (!user) return null;
@@ -97,21 +111,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const userDoc = await getDoc(userRef);
     const currentProgress = userDoc.data()?.progress || {};
 
+    const difficultyKey = difficulty.toLowerCase();
     const updatedProgress = {
       ...currentProgress,
-      [difficulty.toLowerCase()]: {
-        ...(currentProgress[difficulty.toLowerCase()] || {}),
+      [difficultyKey]: {
+        ...currentProgress[difficultyKey],
         [projectId]: {
           completed,
-          completedAt: completed ? new Date().toISOString() : null,
+          updatedAt: new Date().toISOString(),
         },
       },
     };
 
-    await updateDoc(userRef, {
-      progress: updatedProgress,
-    });
+    await updateDoc(userRef, { progress: updatedProgress });
   };
+
+  const logout = () => signOut(auth);
 
   const value = {
     user,

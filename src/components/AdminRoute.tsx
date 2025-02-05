@@ -1,7 +1,8 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdmin } from '@/hooks/useAdmin';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface AdminRouteProps {
   children: React.ReactNode;
@@ -9,7 +10,7 @@ interface AdminRouteProps {
 
 export function AdminRoute({ children }: AdminRouteProps) {
   const { user, loading: authLoading } = useAuth();
-  const { isAdmin, loading: adminLoading } = useAdmin();
+  const { isAdmin, loading: adminLoading, error } = useAdmin();
   const location = useLocation();
 
   // Enhanced logging for debugging
@@ -19,6 +20,7 @@ export function AdminRoute({ children }: AdminRouteProps) {
     authLoading,
     isAdmin,
     adminLoading,
+    error,
     pathname: location.pathname,
     timestamp: new Date().toISOString()
   });
@@ -38,6 +40,21 @@ export function AdminRoute({ children }: AdminRouteProps) {
   if (!user) {
     console.log('[AdminRoute] No user found, redirecting to auth');
     return <Navigate to="/auth" state={{ from: location.pathname }} replace />;
+  }
+
+  // If there's an error checking admin status
+  if (error) {
+    console.log('[AdminRoute] Error checking admin status:', error);
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-4">
+        <Alert variant="destructive" className="max-w-md">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Error verifying admin status. Please try logging out and back in.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
   }
 
   // If user is not admin, redirect to home

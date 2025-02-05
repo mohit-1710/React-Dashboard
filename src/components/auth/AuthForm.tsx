@@ -8,6 +8,8 @@ import { useToast } from '@/components/ui/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase/config';
 
 export const AuthForm = () => {
   const [isSignUp, setIsSignUp] = useState(true);
@@ -29,9 +31,13 @@ export const AuthForm = () => {
         });
       } else {
         await signIn(email, password);
+        // Check if user is admin after sign in
+        const userDoc = await getDoc(doc(db, 'users', (await import('@/lib/firebase/config')).auth.currentUser!.uid));
+        const isAdmin = userDoc.data()?.isAdmin === true;
+        
         toast({
           title: 'Signed in successfully!',
-          description: 'Welcome back!',
+          description: isAdmin ? 'Logged in as Administrator' : 'Welcome back!',
         });
       }
       navigate('/');
@@ -47,9 +53,13 @@ export const AuthForm = () => {
   const handleGoogleSignIn = async () => {
     try {
       await signInWithGoogle();
+      // Check if user is admin after Google sign in
+      const userDoc = await getDoc(doc(db, 'users', (await import('@/lib/firebase/config')).auth.currentUser!.uid));
+      const isAdmin = userDoc.data()?.isAdmin === true;
+      
       toast({
         title: 'Signed in successfully!',
-        description: 'Welcome to React Projects Learning Platform.',
+        description: isAdmin ? 'Logged in as Administrator' : 'Welcome to React Projects Learning Platform.',
       });
       navigate('/');
     } catch (error: any) {
