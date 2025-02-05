@@ -14,7 +14,7 @@ import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  signUp: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, isAdmin: boolean) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
@@ -45,9 +45,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return unsubscribe;
   }, []);
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = async (email: string, password: string, isAdmin: boolean) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    await initializeUserProgress(userCredential.user.uid, email);
+    await initializeUserProgress(userCredential.user.uid, email, isAdmin);
   };
 
   const signIn = async (email: string, password: string) => {
@@ -60,18 +60,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
     
     if (!userDoc.exists()) {
-      await initializeUserProgress(userCredential.user.uid, userCredential.user.email || '');
+      await initializeUserProgress(userCredential.user.uid, userCredential.user.email || '', false);
     }
   };
 
-  const initializeUserProgress = async (uid: string, email: string) => {
-    await setDoc(doc(db, 'users', uid), {
+  const initializeUserProgress = async (uid: string, email: string, isAdmin: boolean = false) => {
+    const userRef = doc(db, 'users', uid);
+    await setDoc(userRef, {
       email,
-      progress: {
-        beginner: {},
-        intermediate: {},
-        advanced: {}
-      }
+      isAdmin,
+      progress: {},
+      createdAt: new Date().toISOString(),
     });
   };
 

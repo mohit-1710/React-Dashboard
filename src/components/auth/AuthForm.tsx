@@ -6,11 +6,14 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 export const AuthForm = () => {
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isAdmin, setIsAdmin] = useState(false);
   const { signUp, signIn, signInWithGoogle } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -19,7 +22,7 @@ export const AuthForm = () => {
     e.preventDefault();
     try {
       if (isSignUp) {
-        await signUp(email, password);
+        await signUp(email, password, isAdmin);
         toast({
           title: 'Account created successfully!',
           description: 'Welcome to React Projects Learning Platform.',
@@ -110,22 +113,41 @@ export const AuthForm = () => {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Input
-                type="email"
+                id="email"
                 placeholder="name@example.com"
+                type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 className="bg-white dark:bg-gray-800"
               />
+            </div>
+            <div className="space-y-2">
               <Input
+                id="password"
+                placeholder="Enter your password"
                 type="password"
-                placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 className="bg-white dark:bg-gray-800"
               />
             </div>
+            {isSignUp && (
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="isAdmin"
+                  checked={isAdmin}
+                  onCheckedChange={setIsAdmin}
+                />
+                <Label
+                  htmlFor="isAdmin"
+                  className="text-sm font-medium leading-none cursor-pointer select-none"
+                >
+                  Register as Admin
+                </Label>
+              </div>
+            )}
             <Button type="submit" className="w-full">
               {isSignUp ? 'Sign Up' : 'Sign In'}
             </Button>
