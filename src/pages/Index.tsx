@@ -1,15 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import DifficultySection from '@/components/DifficultySection';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import ProgressTracker from '@/components/ProgressTracker';
 import Navbar from '@/components/Navbar';
+import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAdmin } from '@/hooks/useAdmin';
 import { getProjects } from '@/lib/firebase/projects';
+import { Settings } from 'lucide-react';
 import type { Project } from '@/types/project';
 
 const Index = () => {
+  const navigate = useNavigate();
   const { getUserProgress } = useAuth();
+  const { isAdmin } = useAdmin();
   const [refreshKey, setRefreshKey] = useState(0);
   const [userProgress, setUserProgress] = useState<any>(null);
   const [activeLevel, setActiveLevel] = useState<'Beginner' | 'Intermediate' | 'Advanced'>('Beginner');
@@ -62,7 +68,19 @@ const Index = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-4xl font-bold">React Learning Projects</h1>
-          <ThemeToggle />
+          <div className="flex items-center gap-4">
+            {isAdmin && (
+              <Button
+                variant="outline"
+                className="flex items-center gap-2"
+                onClick={() => navigate('/admin/projects')}
+              >
+                <Settings className="h-4 w-4" />
+                Manage Projects
+              </Button>
+            )}
+            <ThemeToggle />
+          </div>
         </div>
 
         <ProgressTracker
